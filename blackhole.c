@@ -98,10 +98,11 @@ static double php_blackhole_request_duration() /* {{{ */
 }
 /* }}} */
 
-static inline int php_blackhole_str_append(char **str, const char *buf, int size) /* {{{ */
+static inline int php_blackhole_str_append(char **str, const char *buf) /* {{{ */
 {
     if (*str == NULL) {
-        str = malloc((size_t)size + 1);
+        size_t size = strlen(*str);
+        str = malloc(size + 1);
         memcpy(str, buf, size);
         str[size] = NULL;
         return SUCCESS;
@@ -168,7 +169,7 @@ static char *php_blackhole_create_request_data()
                     return NULL;
                 }
             }
-            php_blackhole_str_append(&data, tag_buf, (int) strlen(tag_buf));
+            php_blackhole_str_append(&data, tag_buf);
             free(tag_buf);
         } else {
             continue;
