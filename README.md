@@ -51,7 +51,7 @@ blackhole_set_tag('action', $actionName);
 
 For some cases you can fetch info: 
 
-```
+```php
 >>> blackhole_get_host()
 => "statsd.telegraf.service.consul"
 >>> blackhole_get_port()
