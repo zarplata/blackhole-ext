@@ -22,7 +22,7 @@ Metrics will not be sent if `host` or `metric_name` is not set.
 ```php
 <?php
 
-blackhole_set_host('telegraf.service.consul');
+blackhole_set_host('statsd.telegraf.service.consul');
 
 // you may choose the metric name for your cases:
 if (PHP_SAPI == 'cli') {
@@ -51,13 +51,20 @@ blackhole_set_tag('action', $actionName);
 
 For some cases you can fetch info: 
 
-```php
->>> dump(blackhole_get_info());
+```
+>>> blackhole_get_host()
+=> "statsd.telegraf.service.consul"
+>>> blackhole_get_port()
+=> 8125
+>>> blackhole_get_metric_name()
+=> "http_requests"
+>>> blackhole_get_tags()
 => [
-     "host" => "",
-     "port" => 8125,
-     "request_duration" => 8.973656,
-     "request_started_at" => 1536591021.4967,
-     "tags" => [],
+     "controller" => "MainController",
+     "action" => "indexAction",
    ]
+>>> blackhole_get_request_started_at()
+=> 1536668715.3135
+>>> blackhole_get_request_duration()
+=> 114.862835
 ```
