@@ -33,15 +33,22 @@ static inline double php_blackhole_timeval_to_double(struct timeval tp)
     return tp.tv_sec + tp.tv_usec / MICRO_IN_SEC;
 }
 
-static int php_blackhole_statsd_init(blackhole_statsd *statsd, const char *host, int port) /* {{{ */
+static blackhole_statsd *php_blackhole_statsd_init(const char *host, int port) /* {{{ */
 {
     if (!host || !port) {
-        return FAILURE;
+        return NULL;
+    }
+
+    blackhole_statsd *statsd = malloc(sizeof(blackhole_statsd));
+    if (statsd == NULL) {
+        php_error_docref(NULL, E_WARNING, "unable to allocate memory for statsd");
+        return NULL;
     }
 
     if ((statsd->sock = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP)) == FAILURE) {
-        php_error_docref(NULL, E_WARNING, "failed to init StatsD UDP socket");
-        return FAILURE;
+        php_error_docref(NULL, E_WARNING, "failed to initialize StatsD UDP socket");
+        free(statsd);
+        return NULL;
     }
 
     memset(&statsd->server, 0, sizeof(statsd->server));
@@ -56,13 +63,14 @@ static int php_blackhole_statsd_init(blackhole_statsd *statsd, const char *host,
     int error;
     if ((error = getaddrinfo(host, NULL, &hints, &result))) {
         php_error_docref(NULL, E_WARNING, "failed to resolve StatsD server hostname '%s': %s", host, gai_strerror(error));
-        return FAILURE;
+        free(statsd);
+        return NULL;
     }
 
     memcpy(&(statsd->server.sin_addr), &((struct sockaddr_in*)result->ai_addr)->sin_addr, sizeof(struct in_addr));
     freeaddrinfo(result);
 
-    return SUCCESS;
+    return statsd;
 }
 /* }}} */
 
@@ -75,6 +83,7 @@ static inline void php_blackhole_statsd_close(blackhole_statsd *statsd) /* {{{ *
         close(statsd->sock);
         statsd->sock = FAILURE;
     }
+    free(statsd);
 }
 /* }}} */
 
@@ -173,7 +182,7 @@ static char *php_blackhole_create_request_data()
 static inline int php_blackhole_send_data() /* {{{ */
 {
     char *data;
-    blackhole_statsd statsd;
+    blackhole_statsd *statsd;
     ssize_t sent;
 
     data = php_blackhole_create_request_data();
@@ -181,16 +190,17 @@ static inline int php_blackhole_send_data() /* {{{ */
         return FAILURE;
     }
 
-    if (php_blackhole_statsd_init(&statsd, BLACKHOLE_G(host), BLACKHOLE_G(port)) == FAILURE) {
+    statsd = php_blackhole_statsd_init(BLACKHOLE_G(host), BLACKHOLE_G(port));
+    if (statsd == NULL) {
         return FAILURE;
     }
 
-    sent = sendto(statsd.sock, data, strlen(data), 0, (struct sockaddr *)&statsd.server, sizeof(statsd.server));
+    sent = sendto(statsd->sock, data, strlen(data), 0, (struct sockaddr *)&statsd->server, sizeof(statsd->server));
     if (sent == FAILURE) {
         php_error_docref(NULL, E_WARNING, "failed to send metrics to StatsD: %s", strerror(errno));
     }
 
-    php_blackhole_statsd_close(&statsd);
+    php_blackhole_statsd_close(statsd);
     free(data);
 
     return sent == FAILURE ? FAILURE : SUCCESS;
