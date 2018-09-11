@@ -98,7 +98,7 @@ static double php_blackhole_request_duration() /* {{{ */
 }
 /* }}} */
 
-static inline int php_blackhole_str_append(char **str, const char *buf) /* {{{ */
+static int php_blackhole_str_append(char **str, const char *buf) /* {{{ */
 {
     if (*str == NULL) {
         size_t size = strlen(*str);
