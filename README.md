@@ -26,9 +26,9 @@ blackhole_set_host('statsd.telegraf.service.consul');
 
 // you may choose the metric name for your cases:
 if (PHP_SAPI == 'cli') {
-    blackhole_set_metric_name('http_requests');
-} else {
     blackhole_set_metric_name('cli');
+} else {
+    blackhole_set_metric_name('http_requests');
 }
 ```
  
