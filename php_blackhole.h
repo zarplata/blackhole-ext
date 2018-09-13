@@ -25,6 +25,7 @@ ZEND_BEGIN_MODULE_GLOBALS(blackhole) /* {{{ */
     char *host;
     int port;
     char *metric_name;
+    char *overall_metric_name;
     double request_time;
     struct timeval request_started_at;
     HashTable tags;

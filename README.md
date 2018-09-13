@@ -47,6 +47,12 @@ blackhole_set_tag('controller', $controllerName);
 blackhole_set_tag('action', $actionName);
 ```
 
+When use tags you might need to have the overall metric:
+
+```php
+blackhole_set_overall_metric_name('http_requests_overall');
+```
+
 ## Additional functions
 
 ```php
