@@ -613,6 +613,11 @@ static PHP_RSHUTDOWN_FUNCTION(blackhole)
         BLACKHOLE_G(metric_name) = NULL;
     }
 
+    if (BLACKHOLE_G(overall_metric_name)) {
+        efree(BLACKHOLE_G(overall_metric_name));
+        BLACKHOLE_G(overall_metric_name) = NULL;
+    }
+
     return SUCCESS;
 }
 /* }}} */
