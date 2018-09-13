@@ -488,14 +488,6 @@ static PHP_MINIT_FUNCTION(blackhole)
 }
 /* }}} */
 
-/* {{{ PHP_MSHUTDOWN_FUNCTION
- */
-static PHP_MSHUTDOWN_FUNCTION(blackhole)
-{
-    return SUCCESS;
-}
-/* }}} */
-
 /* {{{ PHP_RINIT_FUNCTION
  */
 static PHP_RINIT_FUNCTION(blackhole)
@@ -555,7 +547,7 @@ zend_module_entry blackhole_module_entry = {
     "blackhole",
     blackhole_functions,
     PHP_MINIT(blackhole),
-    PHP_MSHUTDOWN(blackhole),
+    NULL,
     PHP_RINIT(blackhole),
     PHP_RSHUTDOWN(blackhole),
     PHP_MINFO(blackhole),
