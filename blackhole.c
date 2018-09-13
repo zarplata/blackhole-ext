@@ -561,6 +561,7 @@ static void php_blackhole_init_globals(zend_blackhole_globals *globals)
     memset(globals, 0, sizeof(*globals));
 
     globals->metric_name = NULL;
+    globals->overall_metric_name = NULL;
     globals->host = NULL;
     globals->port = BLACKHOLE_STATSD_DEFAULT_PORT;
 }
