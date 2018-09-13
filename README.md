@@ -1,7 +1,7 @@
 # blackhole-ext
 
-Blackhole is PHP extension for sending request duration to the StatsD collector.
-Supporting tags in Datadog format.
+Blackhole is PHP extension for measuring requests duration and sending it to the StatsD collector.
+With supporting tags in the Datadog format.
 
 ## Installation
 
@@ -15,41 +15,39 @@ make
 
 You'll need to add `extension=blackhole.so` to your `php.ini` file.
 
-## Usage
+## Runtime configuration
 
-Metrics will not be sent if `host` or `metric_name` is not set.
+You must set the hostname of your StatsD collector:
 
 ```php
-<?php
-
 blackhole_set_host('statsd.telegraf.service.consul');
+```
 
-// you may choose the metric name for your cases:
+Also, you can change default `8125` port:
+
+```php
+blackhole_set_port(1234);
+```
+
+Set the metric name:
+
+```php
+// you may choose the metric name for some cases:
 if (PHP_SAPI == 'cli') {
     blackhole_set_metric_name('cli');
 } else {
     blackhole_set_metric_name('http_requests');
 }
 ```
- 
-Also you can change default `8125` port:
+
+You might use tags (when StatsD collector is supporting its):
 
 ```php
-<?php
-
-blackhole_set_port(1234);
-```
-
-If your StatsD collector might receive tags in Datadog format:
-
-```php
-<?php
-
 blackhole_set_tag('controller', $controllerName);
 blackhole_set_tag('action', $actionName);
 ```
 
-For some cases you can fetch info: 
+## Additional functions
 
 ```php
 >>> blackhole_get_host()
