@@ -489,7 +489,6 @@ ZEND_BEGIN_ARG_INFO_EX(arginfo_blackhole_set_host, 0, 0, 1)
 ZEND_END_ARG_INFO()
 
 ZEND_BEGIN_ARG_INFO_EX(arginfo_blackhole_get_port, 0, 0, 0)
-    ZEND_ARG_INFO(0, port)
 ZEND_END_ARG_INFO()
 
 ZEND_BEGIN_ARG_INFO_EX(arginfo_blackhole_set_port, 0, 0, 1)
