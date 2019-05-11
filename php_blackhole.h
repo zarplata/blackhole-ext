@@ -14,21 +14,24 @@ extern zend_module_entry blackhole_module_entry;
 #endif
 
 #define PHP_BLACKHOLE_VERSION "1.0.0"
-#define BLACKHOLE_STATSD_DEFAULT_PORT 8125
+#define BLACKHOLE_METRICS_MAX 8
 
 typedef struct {
     struct sockaddr_in server;
     int sock;
 } blackhole_statsd;
 
-ZEND_BEGIN_MODULE_GLOBALS(blackhole) /* {{{ */
+typedef struct {
+    char *name;
     char *host;
     int port;
-    char *metric_name;
-    char *overall_metric_name;
-    double request_time;
-    struct timeval request_started_at;
     HashTable tags;
+} blackhole_metric;
+
+ZEND_BEGIN_MODULE_GLOBALS(blackhole) /* {{{ */
+    blackhole_metric metrics[BLACKHOLE_METRICS_MAX];
+    unsigned int metrics_initialized;
+    struct timeval request_started_at;
 ZEND_END_MODULE_GLOBALS(blackhole)
 /* }}} */
 

@@ -33,7 +33,7 @@ static inline double php_blackhole_timeval_to_double(struct timeval tp)
     return tp.tv_sec + tp.tv_usec / MICRO_IN_SEC;
 }
 
-static blackhole_statsd *php_blackhole_statsd_init(const char *host, int port) /* {{{ */
+static blackhole_statsd *php_blackhole_statsd_open(const char *host, int port) /* {{{ */
 {
     if (!host || !port) {
         return NULL;
@@ -74,7 +74,7 @@ static blackhole_statsd *php_blackhole_statsd_init(const char *host, int port) /
 }
 /* }}} */
 
-static inline int php_blackhole_statsd_send(blackhole_statsd *statsd, char *data)
+static int php_blackhole_statsd_send(blackhole_statsd *statsd, char *data)
 {
     ssize_t sent;
 
@@ -83,7 +83,7 @@ static inline int php_blackhole_statsd_send(blackhole_statsd *statsd, char *data
     return sent != FAILURE ? SUCCESS : FAILURE;
 }
 
-static inline void php_blackhole_statsd_close(blackhole_statsd *statsd) /* {{{ */
+static void php_blackhole_statsd_close(blackhole_statsd *statsd) /* {{{ */
 {
     if (statsd == NULL) {
         return;
@@ -187,47 +187,62 @@ static char *php_blackhole_create_request_data(const char *metric_name, HashTabl
 }
 /* }}} */
 
-static inline int php_blackhole_send_data() /* {{{ */
+static blackhole_metric *php_blackhole_find_metric(const char *name) /* {{{ */
 {
-    char *data, *overall_data;
+    for (int i = 0; i < BLACKHOLE_G(metrics_initialized); i++) {
+        blackhole_metric *metric = &BLACKHOLE_G(metrics)[i];
+        if (strcmp(metric->name, name) == 0) {
+            return metric;
+        }
+    }
+    return NULL;
+}
+/* }}} */
+
+static int php_blackhole_send_metric(blackhole_metric *metric, int request_duration_ms) /* {{{ */
+{
+    char *data;
     blackhole_statsd *statsd;
     ssize_t sent;
-    int request_duration_ms = (int) (php_blackhole_request_duration() * 1000);
 
-    data = php_blackhole_create_request_data(BLACKHOLE_G(metric_name), &BLACKHOLE_G(tags), request_duration_ms);
-    overall_data = php_blackhole_create_request_data(BLACKHOLE_G(overall_metric_name), NULL, request_duration_ms);
-    if (data == NULL && overall_data == NULL) {
+    data = php_blackhole_create_request_data(metric->name, &metric->tags, request_duration_ms);
+    if (data == NULL) {
         return FAILURE;
     }
 
-    statsd = php_blackhole_statsd_init(BLACKHOLE_G(host), BLACKHOLE_G(port));
+    statsd = php_blackhole_statsd_open(metric->host, metric->port);
     if (statsd == NULL) {
         return FAILURE;
     }
 
     int isSent = SUCCESS;
 
-    if (data != NULL) {
-        sent = php_blackhole_statsd_send(statsd, data);
-        if (sent == FAILURE) {
-            php_error_docref(NULL, E_WARNING, "failed to send metric to StatsD: %s", strerror(errno));
-            isSent = FAILURE;
-        }
-    }
-
-    if (overall_data != NULL) {
-        sent = php_blackhole_statsd_send(statsd, overall_data);
-        if (sent == FAILURE) {
-            php_error_docref(NULL, E_WARNING, "failed to send overall metric to StatsD: %s", strerror(errno));
-            isSent = FAILURE;
-        }
+    sent = php_blackhole_statsd_send(statsd, data);
+    if (sent == FAILURE) {
+        php_error_docref(NULL, E_WARNING, "failed to send metric to StatsD: %s", strerror(errno));
+        isSent = FAILURE;
     }
 
     php_blackhole_statsd_close(statsd);
     free(data);
-    free(overall_data);
 
     return isSent;
+}
+/* }}} */
+
+static void php_blackhole_free_metric(blackhole_metric *metric) /* {{{ */
+{
+    zend_hash_destroy(&metric->tags);
+
+    if (metric->host) {
+        efree(metric->host);
+        metric->host = NULL;
+    }
+
+    if (metric->name) {
+        efree(metric->name);
+        metric->name = NULL;
+    }
 }
 /* }}} */
 
@@ -238,35 +253,20 @@ static void php_blackhole_tag_dtor(zval *zv) /* {{{ */
         efree(tag);
     }
 }
-/* }}} */
 
 /* {{{ proto string blackhole_get_host()
    Get StatsD host */
 static PHP_FUNCTION(blackhole_get_host)
 {
-    if (zend_parse_parameters(ZEND_NUM_ARGS(), "") != SUCCESS) {
-        return;
-    }
-
-    RETURN_STRING(BLACKHOLE_G(host));
+    php_error_docref(NULL, E_DEPRECATED, "function is deprecated");
+    RETURN_EMPTY_STRING();
 }
 
 /* {{{ proto bool blackhole_set_host(string host)
    Set StatsD host */
 static PHP_FUNCTION(blackhole_set_host)
 {
-    char *host;
-    size_t host_len;
-
-    if (zend_parse_parameters(ZEND_NUM_ARGS(), "s", &host, &host_len) != SUCCESS) {
-        return;
-    }
-
-    if (BLACKHOLE_G(host)) {
-        efree(BLACKHOLE_G(host));
-    }
-
-    BLACKHOLE_G(host) = estrndup(host, host_len);
+    php_error_docref(NULL, E_DEPRECATED, "function is deprecated");
     RETURN_TRUE;
 }
 /* }}} */
@@ -275,11 +275,8 @@ static PHP_FUNCTION(blackhole_set_host)
    Set StatsD port */
 static PHP_FUNCTION(blackhole_get_port)
 {
-    if (zend_parse_parameters(ZEND_NUM_ARGS(), "") != SUCCESS) {
-        return;
-    }
-
-    RETURN_LONG(BLACKHOLE_G(port))
+    php_error_docref(NULL, E_DEPRECATED, "function is deprecated");
+    RETURN_LONG(0)
 }
 /* }}} */
 
@@ -287,10 +284,7 @@ static PHP_FUNCTION(blackhole_get_port)
    Set StatsD port */
 static PHP_FUNCTION(blackhole_set_port)
 {
-    if (zend_parse_parameters(ZEND_NUM_ARGS(), "l", &BLACKHOLE_G(port)) != SUCCESS) {
-        return;
-    }
-
+    php_error_docref(NULL, E_DEPRECATED, "function is deprecated");
     RETURN_TRUE;
 }
 /* }}} */
@@ -299,29 +293,15 @@ static PHP_FUNCTION(blackhole_set_port)
    Set StatsD metric name */
 static PHP_FUNCTION(blackhole_get_metric_name)
 {
-    if (zend_parse_parameters(ZEND_NUM_ARGS(), "") != SUCCESS) {
-        return;
-    }
-
-    RETURN_STRING(BLACKHOLE_G(metric_name))
+    php_error_docref(NULL, E_DEPRECATED, "function is deprecated");
+    RETURN_EMPTY_STRING()
 }
 
 /* {{{ proto bool blackhole_set_metric_name(string metric_name)
    Set StatsD metric name */
 static PHP_FUNCTION(blackhole_set_metric_name)
 {
-    char *metric_name;
-    size_t metric_name_len;
-
-    if (zend_parse_parameters(ZEND_NUM_ARGS(), "s", &metric_name, &metric_name_len) != SUCCESS) {
-        return;
-    }
-
-    if (BLACKHOLE_G(metric_name)) {
-        efree(BLACKHOLE_G(metric_name));
-    }
-
-    BLACKHOLE_G(metric_name) = estrndup(metric_name, metric_name_len);
+    php_error_docref(NULL, E_DEPRECATED, "function is deprecated");
     RETURN_TRUE;
 }
 
@@ -329,29 +309,15 @@ static PHP_FUNCTION(blackhole_set_metric_name)
    Set StatsD metric name */
 static PHP_FUNCTION(blackhole_get_overall_metric_name)
 {
-    if (zend_parse_parameters(ZEND_NUM_ARGS(), "") != SUCCESS) {
-        return;
-    }
-
-    RETURN_STRING(BLACKHOLE_G(overall_metric_name))
+    php_error_docref(NULL, E_DEPRECATED, "function is deprecated");
+    RETURN_EMPTY_STRING()
 }
 
 /* {{{ proto bool blackhole_set_overall_metric_name(string metric_name)
    Set StatsD metric name */
 static PHP_FUNCTION(blackhole_set_overall_metric_name)
 {
-    char *metric_name;
-    size_t metric_name_len;
-
-    if (zend_parse_parameters(ZEND_NUM_ARGS(), "s", &metric_name, &metric_name_len) != SUCCESS) {
-        return;
-    }
-
-    if (BLACKHOLE_G(overall_metric_name)) {
-        efree(BLACKHOLE_G(overall_metric_name));
-    }
-
-    BLACKHOLE_G(overall_metric_name) = estrndup(metric_name, metric_name_len);
+    php_error_docref(NULL, E_DEPRECATED, "function is deprecated");
     RETURN_TRUE;
 }
 
@@ -359,47 +325,82 @@ static PHP_FUNCTION(blackhole_set_overall_metric_name)
    Get request tags */
 static PHP_FUNCTION(blackhole_get_tags)
 {
-    HashPosition pos;
-    zval *zv;
-
     if (zend_parse_parameters(ZEND_NUM_ARGS(), "") != SUCCESS) {
         return;
     }
-
+    php_error_docref(NULL, E_DEPRECATED, "function is deprecated");
     array_init(return_value);
-
-    for (zend_hash_internal_pointer_reset_ex(&BLACKHOLE_G(tags), &pos);
-         (zv = zend_hash_get_current_data_ex(&BLACKHOLE_G(tags), &pos)) != NULL;
-         zend_hash_move_forward_ex(&BLACKHOLE_G(tags), &pos)) {
-        zend_string *tag_key;
-        zend_ulong tag_index;
-        char *tag_value = Z_PTR_P(zv);
-
-        if (zend_hash_get_current_key_ex(&BLACKHOLE_G(tags), &tag_key, &tag_index, &pos) == HASH_KEY_IS_STRING) {
-            add_assoc_string_ex(return_value, tag_key->val, tag_key->len, tag_value);
-        } else {
-            continue;
-        }
-    }
 }
 
 /* {{{ proto bool blackhole_set_tag(string tag, string value)
    Set request tag */
 static PHP_FUNCTION(blackhole_set_tag)
 {
-    char *name, *value;
-    size_t name_len, value_len;
+    php_error_docref(NULL, E_DEPRECATED, "function is deprecated");
+    RETURN_TRUE;
+}
+/* }}} */
 
-    if (zend_parse_parameters(ZEND_NUM_ARGS(), "ss", &name, &name_len, &value, &value_len) != SUCCESS) {
+// NEW API
+static PHP_FUNCTION(blackhole_metric_add) /* {{{ */
+{
+    char *name, *host;
+    size_t name_len, host_len;
+    int port;
+
+    if (zend_parse_parameters(ZEND_NUM_ARGS(), "ssl",
+            &name, &name_len, &host, &host_len, &port) != SUCCESS) {
         return;
     }
 
-    if (name_len < 1) {
+    unsigned int n = BLACKHOLE_G(metrics_initialized);
+    if (n == BLACKHOLE_METRICS_MAX) {
+        php_error_docref(NULL, E_WARNING, "metric %s not added: limit exceeded", name);
+        return;
+    }
+    BLACKHOLE_G(metrics_initialized)++;
+
+    blackhole_metric *metric = &BLACKHOLE_G(metrics)[n];
+
+    if (metric->name) {
+        efree(metric->name);
+    }
+    if (metric->host) {
+        efree(metric->host);
+    }
+
+    metric->name = estrndup(name, name_len);
+    metric->host = estrndup(host, host_len);
+    metric->port = port;
+
+    zend_hash_init(&metric->tags, 10, NULL, php_blackhole_tag_dtor, 0);
+
+    RETURN_TRUE;
+}
+
+static PHP_FUNCTION(blackhole_metric_set_tag) /* {{{ */
+{
+    char *name, *tag, *value;
+    size_t name_len, tag_len, value_len;
+
+    if (zend_parse_parameters(ZEND_NUM_ARGS(), "sss",
+            &name, &name_len, &tag, &tag_len, &value, &value_len) != SUCCESS) {
+        return;
+    }
+
+    blackhole_metric *metric = php_blackhole_find_metric(name);
+
+    if (metric == NULL) {
+        php_error_docref(NULL, E_WARNING, "metric not found");
+        RETURN_FALSE;
+    }
+
+    if (tag_len < 1) {
         php_error_docref(NULL, E_WARNING, "tag name cannot be empty");
         RETURN_FALSE;
     }
 
-    if (strstr(name, ":") != NULL) {
+    if (strstr(tag, ":") != NULL) {
         php_error_docref(NULL, E_WARNING, "tag name is not allowed to contain colons");
         RETURN_FALSE;
     }
@@ -409,9 +410,7 @@ static PHP_FUNCTION(blackhole_set_tag)
         RETURN_FALSE;
     }
 
-    value = estrndup(value, value_len);
-
-    zend_hash_str_update_ptr(&BLACKHOLE_G(tags), name, name_len, value);
+    zend_hash_str_update_ptr(&metric->tags, tag, tag_len, estrndup(value, value_len));
     RETURN_TRUE;
 }
 /* }}} */
@@ -444,43 +443,36 @@ static PHP_FUNCTION(blackhole_get_request_started_at)
     */
 static PHP_FUNCTION(blackhole_get_data)
 {
-    char *data;
     int request_duration_ms = (int) (php_blackhole_request_duration() * 1000);
 
     if (zend_parse_parameters(ZEND_NUM_ARGS(), "") != SUCCESS) {
         return;
     }
 
-    data = php_blackhole_create_request_data(BLACKHOLE_G(metric_name), &BLACKHOLE_G(tags), request_duration_ms);
-    if (!data) {
-        RETURN_NULL();
+    array_init(return_value);
+    for (int i = 0; i < BLACKHOLE_G(metrics_initialized); i++) {
+        blackhole_metric metric = BLACKHOLE_G(metrics)[i];
+        char *data = php_blackhole_create_request_data(metric.name, &metric.tags, request_duration_ms);
+        add_assoc_string_ex(return_value, metric.name, strlen(metric.name), data);
     }
-    RETVAL_STRING(data);
-    free(data);
-}
-/* }}} */
-
-/* {{{ proto string blackhole_get_data()
-    */
-static PHP_FUNCTION(blackhole_get_overall_data)
-{
-    char *data;
-    int request_duration_ms = (int) (php_blackhole_request_duration() * 1000);
-
-    if (zend_parse_parameters(ZEND_NUM_ARGS(), "") != SUCCESS) {
-        return;
-    }
-
-    data = php_blackhole_create_request_data(BLACKHOLE_G(overall_metric_name), NULL, request_duration_ms);
-    if (!data) {
-        RETURN_NULL();
-    }
-    RETVAL_STRING(data);
-    free(data);
 }
 /* }}} */
 
 /* {{{ arginfo */
+// new API
+ZEND_BEGIN_ARG_INFO_EX(arginfo_blackhole_metric_add, 0, 0, 3)
+    ZEND_ARG_INFO(0, metric_name)
+    ZEND_ARG_INFO(0, host)
+    ZEND_ARG_INFO(0, port)
+ZEND_END_ARG_INFO()
+
+ZEND_BEGIN_ARG_INFO_EX(arginfo_blackhole_metric_set_tag, 0, 0, 3)
+    ZEND_ARG_INFO(0, metric_name)
+    ZEND_ARG_INFO(0, tag)
+    ZEND_ARG_INFO(0, value)
+ZEND_END_ARG_INFO()
+
+// legacy API (stubs for BC)
 ZEND_BEGIN_ARG_INFO_EX(arginfo_blackhole_get_host, 0, 0, 0)
 ZEND_END_ARG_INFO()
 
@@ -517,6 +509,7 @@ ZEND_BEGIN_ARG_INFO_EX(arginfo_blackhole_set_tag, 0, 0, 2)
     ZEND_ARG_INFO(0, value)
 ZEND_END_ARG_INFO()
 
+// internal API
 ZEND_BEGIN_ARG_INFO_EX(arginfo_blackhole_get_request_duration, 0, 0, 0)
 ZEND_END_ARG_INFO()
 
@@ -525,9 +518,6 @@ ZEND_END_ARG_INFO()
 
 ZEND_BEGIN_ARG_INFO_EX(arginfo_blackhole_get_data, 0, 0, 0)
 ZEND_END_ARG_INFO()
-
-ZEND_BEGIN_ARG_INFO_EX(arginfo_blackhole_get_overall_data, 0, 0, 0)
-ZEND_END_ARG_INFO()
 /* }}} */
 
 #define BLACKHOLE_FUNC(func) PHP_FE(func, arginfo_ ## func)
@@ -535,6 +525,7 @@ ZEND_END_ARG_INFO()
 /* {{{ blackhole_functions[]
  */
 zend_function_entry blackhole_functions[] = {
+    // legacy metrics API
     BLACKHOLE_FUNC(blackhole_get_host)
     BLACKHOLE_FUNC(blackhole_set_host)
     BLACKHOLE_FUNC(blackhole_get_port)
@@ -545,10 +536,14 @@ zend_function_entry blackhole_functions[] = {
     BLACKHOLE_FUNC(blackhole_set_overall_metric_name)
     BLACKHOLE_FUNC(blackhole_get_tags)
     BLACKHOLE_FUNC(blackhole_set_tag)
+
+    // new metrics API
+    BLACKHOLE_FUNC(blackhole_metric_add)
+    BLACKHOLE_FUNC(blackhole_metric_set_tag)
+
     BLACKHOLE_FUNC(blackhole_get_request_duration)
     BLACKHOLE_FUNC(blackhole_get_request_started_at)
     BLACKHOLE_FUNC(blackhole_get_data)
-    BLACKHOLE_FUNC(blackhole_get_overall_data)
     {NULL, NULL, NULL}
 };
 /* }}} */
@@ -559,10 +554,7 @@ static void php_blackhole_init_globals(zend_blackhole_globals *globals)
 {
     memset(globals, 0, sizeof(*globals));
 
-    globals->metric_name = NULL;
-    globals->overall_metric_name = NULL;
-    globals->host = NULL;
-    globals->port = BLACKHOLE_STATSD_DEFAULT_PORT;
+    globals->metrics_initialized = 0;
 }
 /* }}} */
 
@@ -588,8 +580,6 @@ static PHP_RINIT_FUNCTION(blackhole)
         return FAILURE;
     }
 
-    zend_hash_init(&BLACKHOLE_G(tags), 10, NULL, php_blackhole_tag_dtor, 0);
-
     return SUCCESS;
 }
 /* }}} */
@@ -598,23 +588,11 @@ static PHP_RINIT_FUNCTION(blackhole)
  */
 static PHP_RSHUTDOWN_FUNCTION(blackhole)
 {
-    php_blackhole_send_data();
+    int request_duration_ms = (int) (php_blackhole_request_duration() * 1000);
 
-    zend_hash_destroy(&BLACKHOLE_G(tags));
-
-    if (BLACKHOLE_G(host)) {
-        efree(BLACKHOLE_G(host));
-        BLACKHOLE_G(host) = NULL;
-    }
-
-    if (BLACKHOLE_G(metric_name)) {
-        efree(BLACKHOLE_G(metric_name));
-        BLACKHOLE_G(metric_name) = NULL;
-    }
-
-    if (BLACKHOLE_G(overall_metric_name)) {
-        efree(BLACKHOLE_G(overall_metric_name));
-        BLACKHOLE_G(overall_metric_name) = NULL;
+    for (int i = 0; i < BLACKHOLE_G(metrics_initialized); i++) {
+        php_blackhole_send_metric(&BLACKHOLE_G(metrics)[i], request_duration_ms);
+        php_blackhole_free_metric(&BLACKHOLE_G(metrics)[i]);
     }
 
     return SUCCESS;
