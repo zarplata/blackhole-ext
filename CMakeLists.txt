@@ -7,23 +7,15 @@ add_custom_target(run
         WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}
         COMMAND make &&
         php -r '
-            #blackhole_set_tag\(\"controller_action\", \"main::index\"\)\;
+            blackhole_metric_add\(\"my_metric1\", \"localhost\", 8125\)\;
+            blackhole_metric_set_tag\(\"my_metric1\", \"tag1\", \"value1\"\)\;
+            blackhole_metric_set_tag\(\"my_metric1\", \"tag2\", \"value2\"\)\;
 
-            blackhole_set_tag\(\"controller\", \"main\"\)\;
-            blackhole_set_tag\(\"action\", \"index\"\)\;
-            blackhole_set_host\(\"127.0.0.1\"\)\;
-            blackhole_set_metric_name\(\"this_is_my_metric\"\)\;
-            blackhole_set_overall_metric_name\(\"this_is_my_overall_metric\"\)\;
+            blackhole_metric_add\(\"my_metric2\", \"localhost\", 8125\)\;
+            blackhole_metric_set_tag\(\"my_metric2\", \"tag1-2\", \"value1\"\)\;
+            blackhole_metric_set_tag\(\"my_metric2\", \"tag2-2\", \"value2\"\)\;
 
-            echo \"request_data: \", blackhole_get_data\(\), PHP_EOL\;
-            echo \"request_overall_data: \", blackhole_get_overall_data\(\), PHP_EOL\;
-            echo \"host: \", blackhole_get_host\(\), PHP_EOL\;
-            echo \"port: \", blackhole_get_port\(\), PHP_EOL\;
-            echo \"metric_name: \", blackhole_get_metric_name\(\), PHP_EOL\;
-            echo \"overall_metric_name: \", blackhole_get_overall_metric_name\(\), PHP_EOL\;
-            echo \"request_started_at: \", blackhole_get_request_started_at\(\), PHP_EOL\;
-            echo \"request_duration: \", blackhole_get_request_duration\(\), PHP_EOL\;
-            var_dump\(blackhole_get_tags\(\)\)\;
+            var_dump\(blackhole_get_data\(\)\)\;
         ')
 add_custom_target(make WORKING_DIRECTORY ${PROJECT_SOURCE_DIR} COMMAND make)
 add_custom_target(makeall
@@ -34,7 +26,7 @@ add_custom_target(makeall
 set(SOURCE_FILES php_blackhole.h blackhole.c)
 
 # php
-set(PHP_SOURCE /usr/local/Cellar/php/7.2.9_2/include/php)
+set(PHP_SOURCE /usr/local/Cellar/php@7.2/7.2.15/include/php)
 include_directories(${PHP_SOURCE}/main)
 include_directories(${PHP_SOURCE}/Zend)
 include_directories(${PHP_SOURCE}/sapi)
