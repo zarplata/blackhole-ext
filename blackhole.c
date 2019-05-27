@@ -346,9 +346,9 @@ static PHP_FUNCTION(blackhole_metric_add) /* {{{ */
 {
     char *name, *host;
     size_t name_len, host_len;
-    int port;
+    long port = 8125;
 
-    if (zend_parse_parameters(ZEND_NUM_ARGS(), "ssl",
+    if (zend_parse_parameters(ZEND_NUM_ARGS(), "ss|l",
             &name, &name_len, &host, &host_len, &port) != SUCCESS) {
         return;
     }
