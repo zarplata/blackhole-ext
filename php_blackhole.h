@@ -13,7 +13,7 @@ extern zend_module_entry blackhole_module_entry;
 #include "TSRM.h"
 #endif
 
-#define PHP_BLACKHOLE_VERSION "2.0.0"
+#define PHP_BLACKHOLE_VERSION "2.0.1"
 #define BLACKHOLE_METRICS_MAX 8
 
 typedef struct {
