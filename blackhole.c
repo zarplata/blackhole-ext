@@ -453,7 +453,9 @@ static PHP_FUNCTION(blackhole_get_data)
     for (int i = 0; i < BLACKHOLE_G(metrics_initialized); i++) {
         blackhole_metric metric = BLACKHOLE_G(metrics)[i];
         char *data = php_blackhole_create_request_data(metric.name, &metric.tags, request_duration_ms);
-        add_assoc_string_ex(return_value, metric.name, strlen(metric.name), data);
+        char *key;
+        asprintf(&key, "%d#%s#%d", i, metric.host, metric.port);
+        add_assoc_string_ex(return_value, key, strlen(key), data);
     }
 }
 /* }}} */
