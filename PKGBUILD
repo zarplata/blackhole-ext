@@ -1,5 +1,5 @@
 pkgname=php-blackhole
-pkgver='1.0.0'
+pkgver='1.1.2'
 pkgrel=1
 pkgdesc="PHP extension for sending request duration to the StatsD collector"
 url="http://github.com/zarplata/php-blackhole-ext"
