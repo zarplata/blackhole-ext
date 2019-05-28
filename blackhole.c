@@ -555,8 +555,6 @@ zend_function_entry blackhole_functions[] = {
 static void php_blackhole_init_globals(zend_blackhole_globals *globals)
 {
     memset(globals, 0, sizeof(*globals));
-
-    globals->metrics_initialized = 0;
 }
 /* }}} */
 
@@ -574,6 +572,8 @@ static PHP_MINIT_FUNCTION(blackhole)
 static PHP_RINIT_FUNCTION(blackhole)
 {
     struct timeval t;
+
+    BLACKHOLE_G(metrics_initialized) = 0;
 
     if (gettimeofday(&t, NULL) == SUCCESS) {
         (&BLACKHOLE_G(request_started_at))->tv_sec = t.tv_sec;
