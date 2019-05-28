@@ -24,7 +24,7 @@ typedef struct {
 typedef struct {
     char *name;
     char *host;
-    int port;
+    long port;
     HashTable tags;
 } blackhole_metric;
 
