@@ -276,7 +276,7 @@ static PHP_FUNCTION(blackhole_set_host)
 static PHP_FUNCTION(blackhole_get_port)
 {
     php_error_docref(NULL, E_DEPRECATED, "function is deprecated");
-    RETURN_LONG(0)
+    RETURN_LONG(0);
 }
 /* }}} */
 
@@ -294,7 +294,7 @@ static PHP_FUNCTION(blackhole_set_port)
 static PHP_FUNCTION(blackhole_get_metric_name)
 {
     php_error_docref(NULL, E_DEPRECATED, "function is deprecated");
-    RETURN_EMPTY_STRING()
+    RETURN_EMPTY_STRING();
 }
 
 /* {{{ proto bool blackhole_set_metric_name(string metric_name)
@@ -310,7 +310,7 @@ static PHP_FUNCTION(blackhole_set_metric_name)
 static PHP_FUNCTION(blackhole_get_overall_metric_name)
 {
     php_error_docref(NULL, E_DEPRECATED, "function is deprecated");
-    RETURN_EMPTY_STRING()
+    RETURN_EMPTY_STRING();
 }
 
 /* {{{ proto bool blackhole_set_overall_metric_name(string metric_name)
